@@ -28,6 +28,7 @@ const initialState = {
   input: '',
   imageUrl: '',
   box: {},
+  facesList: [],
   route: 'signin',
   isSignedIn: false,
   user: {
@@ -58,21 +59,31 @@ class App extends Component {
   }
 
   calculateFaceLocation = (data) => {
-    const clarifaiFace = data.outputs[0].data.regions[0].region_info.bounding_box;
+    const numFaces = data.outputs[0].data.regions.length;
+    const facesList = [];
     const image = document.getElementById('inputImage');
     const width = Number(image.width);
     const height = Number(image.height);
-    return{
-      leftCol: clarifaiFace.left_col * width,
-      topRow: clarifaiFace.top_row * height,
-      rightCol: width - (clarifaiFace.right_col * width),
-      bottomRow: height - (clarifaiFace.bottom_row * height),
+    let i = 0;
+    
+    for(i = 0; i < numFaces; i++)
+    {
+      let clarifaiFace = data.outputs[0].data.regions[i].region_info.bounding_box;
+      facesList.push(
+        {
+          leftCol: clarifaiFace.left_col * width,
+          topRow: clarifaiFace.top_row * height,
+          rightCol: width - (clarifaiFace.right_col * width),
+          bottomRow: height - (clarifaiFace.bottom_row * height),
+        }
+      )
     }
+    
+    return(facesList)
   }
 
-  displayFaceBox = (box) => {
-    console.log(box)
-    this.setState({box: box});
+  displayFaceBox = (facesList) => {
+    this.setState({facesList: facesList});
   }
   onInputChange = (event) => {
     this.setState({input: event.target.value});
@@ -86,22 +97,21 @@ class App extends Component {
             body: JSON.stringify({
               input: this.state.input
             })
-          })
-          .then(response => response.json())
-          .then(response => {
-            if (response) {
-              fetch('https://afternoon-tundra-31176.herokuapp.com/image', {
-                method: 'put',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                  id: this.state.user.id
-                })
+    }).then(response => response.json())
+      .then(response => {
+          if (response) {
+            fetch('https://afternoon-tundra-31176.herokuapp.com/image', {
+              method: 'put',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({
+                id: this.state.user.id
               })
-              .then(response => response.json())
-              .then(count => {
-                this.setState(Object.assign(this.state.user, {entries: count}))
-              })
-            .catch(console.log)
+            })
+            .then(response => response.json())
+            .then(count => {
+              this.setState(Object.assign(this.state.user, {entries: count}))
+            })
+          .catch(console.log)
         }
         this.displayFaceBox(this.calculateFaceLocation(response))
       })
@@ -122,7 +132,7 @@ class App extends Component {
   }
 
   render() {
-    const {isSignedIn, imageUrl, route, box} = this.state;
+    const {isSignedIn, imageUrl, route, facesList} = this.state;
     return (
       <div className="App">
         <Particles className='particles'
@@ -137,7 +147,7 @@ class App extends Component {
                 onInputChange= {this.onInputChange} 
                 onButtonSubmit={this.onButtonSubmit}
               />
-              <FaceRecognition box={box} imageUrl={imageUrl}/>
+              <FaceRecognition facesList={facesList} imageUrl={imageUrl}/>
             </div>
           : (
               route === 'signin' 
