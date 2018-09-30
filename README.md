@@ -13,3 +13,6 @@ Node.js
 JavaScript
 Clarifai API
 Visual Studio Code
+
+###Additional Resources
+Project originally began as a project in the Zero To Mastery web development course on Udemy.
